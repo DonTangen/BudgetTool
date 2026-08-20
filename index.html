@@ -729,7 +729,7 @@
             function recalc(state) {
                 const nonCompleted = state.weeks.filter(w => !w.completed);
                 const completedSum = state.weeks.filter(w => w.completed).reduce((s, w) => s + w.allocated, 0);
-                const pool = state.monthlyBudget - state.groceryTotal + state.totalSavingsReapplied - completedSum;
+                const pool = state.monthlyBudget + state.totalSavingsReapplied - completedSum;
                 const per = nonCompleted.length ? pool / nonCompleted.length : 0;
                 nonCompleted.forEach(w => { w.allocated = per; });
             }
@@ -773,6 +773,7 @@
                     } else if (ev.type === 'spending') {
                         const w = state.weeks[ev.weekIndex];
                         if (w) w.spent += ev.amount;
+                        state.monthlyBudget -= ev.amount;
                     } else if (ev.type === 'bill') {
                         // apply bill only if it belongs to the current month being replayed
                         const evMonth = normalizeMonth(ev.month || state.month || null);
@@ -782,6 +783,7 @@
                         }
                     } else if (ev.type === 'grocery') {
                         state.groceryTotal += ev.amount;
+                        state.monthlyBudget -= ev.amount;
                         // adjust allocations immediately so groceries affect subsequent end_week handling
                         recalc(state);
                     } else if (ev.type === 'end_week') {
@@ -790,7 +792,7 @@
                             const leftover = w.allocated - w.spent;
                             state.savings += leftover;
                             w.completed = true;
-                            recalc(state);
+                            // do NOT recalc here — closing a week should not redistribute allocations for remaining weeks
                         }
                     } else if (ev.type === 'savings_withdraw') {
                         state.totalSavingsReapplied += ev.amount;
