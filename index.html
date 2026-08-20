@@ -790,15 +790,32 @@
                         const w = state.weeks[ev.weekIndex];
                         if (w && !w.completed) {
                             const leftover = w.allocated - w.spent;
-                            state.savings += leftover;
                             w.completed = true;
-                            // do NOT recalc here — closing a week should not redistribute allocations for remaining weeks
+                            if (leftover >= 0) {
+                                // positive leftover moves to savings
+                                state.savings += leftover;
+                            } else {
+                                // negative leftover (overspent) should NOT reduce savings here;
+                                // instead spread the deficit across remaining non-completed weeks
+                                const deficit = -leftover;
+                                const remaining = state.weeks.filter(x => !x.completed);
+                                if (remaining.length > 0) {
+                                    const per = deficit / remaining.length;
+                                    remaining.forEach(rw => { rw.allocated = (rw.allocated || 0) - per; });
+                                } else {
+                                    // no remaining weeks: apply deficit to savings (will go negative)
+                                    state.savings -= deficit;
+                                }
+                            }
                         }
                     } else if (ev.type === 'savings_withdraw') {
+                        // spread the withdrawn savings evenly across every non-completed week
+                        const nonCompleted = state.weeks.filter(w => !w.completed);
+                        const per = nonCompleted.length ? (ev.amount / nonCompleted.length) : 0;
+                        nonCompleted.forEach(w => { w.allocated += per; });
                         state.totalSavingsReapplied += ev.amount;
                         state.savings -= ev.amount;
-                        // ensure allocations are updated after savings moves
-                        recalc(state);
+                        // allocations updated by direct addition
                     }
                 });
 
