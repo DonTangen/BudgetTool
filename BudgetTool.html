@@ -1,0 +1,1235 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monthly Budget Tool</title>
+    <style>
+        /* Use Inter + a system font stack for a modern, Apple-like UI */
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #f5f7fa;
+            --surface: #ffffff;
+            --muted: #f1f3f5;
+            --text: #1c1c1e;
+            --muted-text: #6e6e73;
+            --accent: #007aff; /* Apple blue */
+            --accent-deep: #0060df;
+            --danger: #ff3b30;
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --card-shadow: 0 6px 20px rgba(20,20,20,0.06);
+            /* compatibility mappings for older variable names used elsewhere in the CSS */
+            --stamp-red: var(--danger);
+            --stamp-red-deep: #e02b20;
+            --postal-green: #34c759;
+            --postal-green-deep: #2f9e4a;
+            --ink: var(--text);
+            --ink-soft: var(--muted-text);
+            --paper: var(--surface);
+            --paper-dim: var(--muted);
+            --kraft-shadow: rgba(0,0,0,0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Inter, Arial, sans-serif;
+            color: var(--text);
+            min-height: 100vh;
+            padding: 32px 18px 92px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 26px;
+        }
+
+            header h1 {
+                font-family: 'Special Elite', monospace;
+                font-size: 2.3rem;
+                letter-spacing: 1px;
+                margin: 0 0 4px;
+                color: var(--ink);
+                text-shadow: 1px 1px 0 rgba(255,255,255,0.25);
+            }
+
+            header p {
+                margin: 0;
+                font-size: .85rem;
+                color: var(--ink-soft);
+                letter-spacing: .4px;
+            }
+
+        .card {
+            background: var(--surface);
+            border: none;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--card-shadow);
+        }
+
+        /* ---------- setup bar ---------- */
+        .setup {
+            padding: 18px;
+            display: grid;
+            grid-template-columns: 140px 140px 1fr 140px;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        /* ensure inputs inside the setup grid size to their column and don't force overflow */
+        .setup select,
+        .setup input[type=number],
+        .setup input[type=text] {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+            .field label {
+                font-size: .68rem;
+                text-transform: uppercase;
+                letter-spacing: .08em;
+                color: var(--ink-soft);
+                font-weight: 600;
+            }
+
+        select, input[type=number], input[type=text] {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            font-size: .95rem;
+            padding: 10px 12px;
+            border: 1px solid #e6e7eb;
+            border-radius: var(--radius-md);
+            background: #ffffff;
+            color: var(--text);
+            min-width: 160px;
+            box-shadow: none;
+        }
+
+            select:disabled, input:disabled {
+                background: var(--paper-dim);
+                color: var(--ink-soft);
+                cursor: not-allowed;
+            }
+
+            input:focus, select:focus {
+                outline: 2px solid var(--postal-green);
+                outline-offset: 1px;
+            }
+
+        .amount-field {
+            position: relative;
+        }
+
+            .amount-field input {
+                padding-left: 22px;
+                min-width: 130px;
+            }
+
+        .amount-field::before {
+                content: "$";
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'IBM Plex Mono', monospace;
+                color: var(--muted-text);
+            }
+
+        button {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+            font-size: .9rem;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            transition: transform .08s ease, box-shadow .12s ease, background-color .12s ease;
+        }
+
+            button:hover:not(:disabled) {
+                filter: brightness(1.06);
+            }
+
+            button:active:not(:disabled) {
+                transform: translateY(1px);
+            }
+
+            button:disabled {
+                opacity: .45;
+                cursor: not-allowed;
+            }
+
+        .btn-start {
+            background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+            color: #ffffff;
+            box-shadow: 0 6px 18px rgba(0,122,255,0.12);
+        }
+
+        .btn-reset {
+            background: linear-gradient(180deg, var(--danger), #e02b20);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(255,59,48,0.10);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid #e6e7eb;
+        }
+
+        .btn-small {
+            padding: 7px 11px;
+            font-size: .75rem;
+        }
+
+        .hint {
+            font-size: .72rem;
+            color: var(--ink-soft);
+            width: 100%;
+            margin-top: 8px;
+            grid-column: 1 / -1;
+        }
+
+        /* ---------- summary stats ---------- */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+
+        .stat {
+            background: var(--paper);
+            border: 1px dashed var(--kraft-shadow);
+            border-radius: 6px;
+            padding: 12px 14px;
+            text-align: center;
+        }
+
+            .stat .label {
+                font-size: .65rem;
+                text-transform: uppercase;
+                letter-spacing: .08em;
+                color: var(--ink-soft);
+                font-weight: 600;
+            }
+
+            .stat .value {
+                font-family: 'IBM Plex Mono', monospace;
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-top: 2px;
+            }
+
+                .stat .value.neg {
+                    color: var(--stamp-red);
+                }
+
+                .stat .value.pos {
+                    color: var(--postal-green);
+                }
+
+        /* ---------- sections ---------- */
+        .section-title {
+            font-family: 'Special Elite', monospace;
+            font-size: 1.05rem;
+            margin: 26px 0 10px;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .section-title .rule {
+                flex: 1;
+                border-top: 1px dashed var(--kraft-shadow);
+            }
+
+        .row-card {
+            padding: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: flex-end;
+            margin-bottom: 22px;
+        }
+
+            .row-card .totals {
+                margin-left: auto;
+                text-align: right;
+            }
+
+                .row-card .totals .label {
+                    font-size: .68rem;
+                    color: var(--ink-soft);
+                    text-transform: uppercase;
+                    letter-spacing: .06em;
+                }
+
+                .row-card .totals .value {
+                    font-family: 'IBM Plex Mono', monospace;
+                    font-size: 1.3rem;
+                    font-weight: 700;
+                }
+
+        /* ---------- weeks grid ---------- */
+        .weeks {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .week-card {
+            background: var(--surface);
+            border: 1px solid rgba(0,0,0,0.04);
+            clip-path: polygon(0 20px, 50% 0, 100% 20px, 100% 100%, 0 100%);
+            padding: 32px 16px 16px;
+            position: relative;
+            box-shadow: var(--card-shadow);
+        }
+
+            .week-card.completed {
+                opacity: .72;
+            }
+
+        .postmark {
+            position: absolute;
+            top: -14px;
+            right: 10px;
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            border: 2px dashed rgba(0,122,255,0.18);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,122,255,0.06);
+            transform: rotate(-9deg);
+            font-family: 'IBM Plex Mono', monospace;
+            text-align: center;
+            line-height: 1.05;
+            color: var(--accent-deep);
+        }
+
+            .postmark .wk {
+                font-size: .62rem;
+                font-weight: 700;
+                letter-spacing: .05em;
+            }
+
+            .postmark .dt {
+                font-size: .6rem;
+                color: var(--ink-soft);
+            }
+
+        .week-card h3 {
+            margin: 0 0 10px;
+            font-size: .95rem;
+            font-family: 'Inter';
+            font-weight: 700;
+        }
+
+        .week-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: .78rem;
+            margin-bottom: 3px;
+            color: var(--ink-soft);
+        }
+
+            .week-line span.v {
+                font-family: 'IBM Plex Mono', monospace;
+                color: var(--text);
+            }
+
+        .gauge {
+            height: 8px;
+            border-radius: 8px;
+            background: rgba(2,6,23,0.04);
+            overflow: hidden;
+            margin: 10px 0 12px;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+            .gauge-fill.over {
+                background: var(--danger);
+            }
+
+        .remaining-big {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 4px 0 10px;
+        }
+
+            .remaining-big.neg {
+                color: var(--stamp-red);
+            }
+
+        .week-card .add-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+            .week-card .add-row .amount-field {
+                flex: 1;
+            }
+
+            .week-card .add-row input {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .week-card .add-row button {
+                padding: 9px 10px;
+            }
+
+        .closed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--accent-deep);
+            margin-top: 6px;
+        }
+
+        /* ---------- history ---------- */
+        .history {
+            padding: 6px 0 6px;
+        }
+
+        .history-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            border-bottom: 1px dashed var(--kraft-shadow);
+            font-size: .82rem;
+        }
+
+            .history-row:last-child {
+                border-bottom: none;
+            }
+
+            .history-row .tag {
+                font-size: .62rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                padding: 3px 7px;
+                border-radius: 3px;
+                background: var(--paper-dim);
+                color: var(--ink-soft);
+                white-space: nowrap;
+            }
+
+            .history-row .desc {
+                flex: 1;
+                color: var(--ink);
+            }
+
+            .history-row .amt {
+                font-family: 'IBM Plex Mono', monospace;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+                .history-row .amt.neg {
+                    color: var(--stamp-red);
+                }
+
+                .history-row .amt.pos {
+                    color: var(--postal-green);
+                }
+
+            .history-row .undo {
+                background: none;
+                border: none;
+                color: var(--stamp-red);
+                font-size: 1rem;
+                line-height: 1;
+                padding: 4px 6px;
+                cursor: pointer;
+                font-weight: 700;
+            }
+
+        .history-empty {
+            padding: 18px;
+            text-align: center;
+            color: var(--ink-soft);
+            font-size: .85rem;
+        }
+
+        /* ---------- overlay / dialog ---------- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20,15,8,0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 50;
+        }
+
+            .overlay.hidden {
+                display: none;
+            }
+
+        .dialog {
+            background: var(--paper);
+            border: 1px solid var(--kraft-shadow);
+            border-radius: 8px;
+            padding: 22px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        }
+
+            .dialog h3 {
+                margin: 0 0 6px;
+                font-family: 'Special Elite', monospace;
+                font-size: 1.1rem;
+            }
+
+            .dialog p {
+                margin: 0 0 14px;
+                font-size: .82rem;
+                color: var(--ink-soft);
+            }
+
+            .dialog .dialog-actions {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 16px;
+            }
+
+        footer.note {
+            text-align: center;
+            font-size: .7rem;
+            color: var(--ink-soft);
+            margin-top: 30px;
+        }
+
+        @media (max-width: 560px) {
+            header h1 {
+                font-size: 1.7rem;
+            }
+
+            .row-card .totals {
+                margin-left: 0;
+                text-align: left;
+            }
+
+            select, input[type=number] {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .field {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+        <header>
+            <h1>Monthly Budget Tool</h1>
+            <p>Split the month into weekly spending amounts</p>
+        </header>
+
+        <div class="card setup">
+            <div class="field">
+                <label for="monthSelect">Month</label>
+                <select id="monthSelect"></select>
+            </div>
+            <div class="field">
+                <label for="incomeInput">Income</label>
+                <div class="amount-field">
+                    <input type="number" id="incomeInput" data-persist="income" min="0" step="0.01" placeholder="0.00" />
+                </div>
+            </div>
+            <div class="field bill-field">
+                <label for="billInput">Add bill (subtract)</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <div class="amount-field" style="flex:1;">
+                        <input type="number" id="billInput" min="0" step="0.01" placeholder="0.00" />
+                    </div>
+                    <button id="addBillBtn" class="btn-ghost btn-small">Add bill</button>
+                </div>
+                <div id="preBillsList" style="margin-top:8px;font-size:0.9rem;color:var(--muted-text);"></div>
+                <div id="billsList" style="margin-top:8px;font-size:0.95rem;color:var(--muted-text);"></div>
+            </div>
+            <div class="field">
+                <button id="startBtn" class="btn-start">▶ Start month</button>
+            </div>
+            <div class="field">
+                <button id="nextMonthBtn" class="btn-reset" style="display:none;">Next month →</button>
+            </div>
+            <div class="hint" id="setupHint">Choose a month and a budget, then start the month. Weeks are set by how many Fridays fall in that month.</div>
+        </div>
+
+        <div id="mainContent" style="display:none;">
+
+            <div class="stats" id="statsRow"></div>
+
+            <div class="section-title"><span>🛒 Groceries</span><div class="rule"></div></div>
+            <div class="card row-card">
+                <div class="field">
+                    <label for="groceryAmount">Spent on groceries</label>
+                    <div class="amount-field">
+                        <input type="number" id="groceryAmount" data-persist="grocery-amount" min="0" step="0.01" placeholder="0.00" />
+                    </div>
+                </div>
+                <div class="field">
+                    <button id="addGroceryBtn" class="btn-ghost">Add grocery spending</button>
+                </div>
+                <div class="totals">
+                    <div class="label">Total groceries spent</div>
+                    <div class="value" id="groceryTotalValue">$0.00</div>
+                </div>
+            </div>
+
+            <div class="section-title"><span>🐷 Savings</span><div class="rule"></div></div>
+            <div class="card row-card">
+                <div class="totals" style="margin-left:0;">
+                    <div class="label">Savings balance</div>
+                    <div class="value" id="savingsValue">$0.00</div>
+                </div>
+                <div class="field" style="margin-left:auto;">
+                    <button id="openSavingsDialogBtn" class="btn-ghost">Use savings</button>
+                </div>
+            </div>
+
+            <div class="section-title"><span>📅 Weekly allowance</span><div class="rule"></div></div>
+            <div class="weeks" id="weeksGrid"></div>
+
+            <div class="section-title"><span>🧾 History</span><div class="rule"></div></div>
+            <div class="card history" id="historyList"></div>
+
+            <div class="field" style="margin-top:18px;">
+                <button id="resetBtn" class="btn-reset">↺ Reset month</button>
+            </div>
+        </div>
+
+        <footer class="note">All figures are saved locally in this browser — data persists in this browser on this device.</footer>
+    </div>
+
+    <!-- Savings withdraw dialog -->
+    <div class="overlay hidden" id="savingsOverlay">
+        <div class="dialog">
+            <h3>Use savings</h3>
+            <p>This amount comes out of savings and is spread evenly across every week that hasn't closed yet.</p>
+            <div class="field">
+                <label for="savingsWithdrawAmount">Amount</label>
+                <div class="amount-field">
+                    <input type="number" id="savingsWithdrawAmount" min="0" step="0.01" placeholder="0.00" />
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-ghost" id="cancelSavingsBtn">Cancel</button>
+                <button class="btn-start" id="applySavingsBtn">Apply to remaining weeks</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset confirm dialog -->
+    <div class="overlay hidden" id="resetOverlay">
+        <div class="dialog">
+            <h3>Reset this month?</h3>
+            <p>This clears every entry — spending, groceries, savings moves, all of it — so you can start the month over. Your month and budget stay filled in.</p>
+            <div class="dialog-actions">
+                <button class="btn-ghost" id="cancelResetBtn">Cancel</button>
+                <button class="btn-reset" id="confirmResetBtn">Reset month</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            "use strict";
+
+            // ---------- state ----------
+            let events = [];      // event-sourced log: {id, type, ...payload}
+            let idCounter = 1;
+            function uid() { return 'e' + (idCounter++); }
+            let preStartBills = []; // bills added before starting month
+
+            // ---------- helpers ----------
+            function fmt(n) {
+                const sign = n < -0.004 ? '-' : '';
+                return sign + '$' + Math.abs(n).toFixed(2);
+            }
+
+            function getFridays(year, monthIndex) {
+                const dates = [];
+                const d = new Date(year, monthIndex, 1);
+                while (d.getMonth() === monthIndex) {
+                    if (d.getDay() === 5) dates.push(new Date(d));
+                    d.setDate(d.getDate() + 1);
+                }
+                return dates;
+            }
+
+            function getMonthOptions() {
+                const opts = [];
+                const now = new Date();
+                for (let i = 0; i < 15; i++) {
+                    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                    const value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                    const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    opts.push({ value, label });
+                }
+                return opts;
+            }
+
+            function dateLabel(d) {
+                return d.toLocaleString('default', { month: 'short', day: 'numeric' });
+            }
+
+            function normalizeMonth(m) {
+                if (!m) return null;
+                const parts = String(m).split('-').map(Number);
+                if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return String(m);
+                return parts[0] + '-' + String(parts[1]).padStart(2, '0');
+            }
+
+            // ---------- event-sourced replay ----------
+            function recalc(state) {
+                const nonCompleted = state.weeks.filter(w => !w.completed);
+                const completedSum = state.weeks.filter(w => w.completed).reduce((s, w) => s + w.allocated, 0);
+                const pool = state.monthlyBudget - state.groceryTotal + state.totalSavingsReapplied - completedSum;
+                const per = nonCompleted.length ? pool / nonCompleted.length : 0;
+                nonCompleted.forEach(w => { w.allocated = per; });
+            }
+
+            function replay(evts) {
+                const state = {
+                    started: false,
+                    month: null,
+                    monthLabel: '',
+                    monthlyBudget: 0,
+                    weeks: [],
+                    groceryTotal: 0,
+                    totalSavingsReapplied: 0,
+                    savings: 0,
+                };
+                // temporary variables removed; bills are applied inline now
+
+                function normalizeMonth(m) {
+                    if (!m) return null;
+                    const parts = String(m).split('-').map(Number);
+                    if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return String(m);
+                    return parts[0] + '-' + String(parts[1]).padStart(2, '0');
+                }
+
+                evts.forEach(ev => {
+                    if (ev.type === 'start_month') {
+                        const [y, m] = ev.month.split('-').map(Number);
+                        const fridays = getFridays(y, m - 1);
+                        state.started = true;
+                        state.month = normalizeMonth(ev.month);
+                        state.monthLabel = ev.monthLabel;
+                        state.monthlyBudget = ev.amount;
+                        state.groceryTotal = 0;
+                        state.totalSavingsReapplied = 0;
+                        state.savings = 0;
+                        state.weeks = fridays.map((d, i) => ({
+                            index: i, date: d, allocated: 0, spent: 0, completed: false
+                        }));
+                        // perform initial allocation so subsequent modifiers (bills/groceries) adjust from a baseline
+                        recalc(state);
+                    } else if (ev.type === 'spending') {
+                        const w = state.weeks[ev.weekIndex];
+                        if (w) w.spent += ev.amount;
+                    } else if (ev.type === 'bill') {
+                        // apply bill only if it belongs to the current month being replayed
+                        const evMonth = normalizeMonth(ev.month || state.month || null);
+                        if (state.started && evMonth && evMonth === state.month) {
+                            state.monthlyBudget -= ev.amount;
+                            recalc(state);
+                        }
+                    } else if (ev.type === 'grocery') {
+                        state.groceryTotal += ev.amount;
+                        // adjust allocations immediately so groceries affect subsequent end_week handling
+                        recalc(state);
+                    } else if (ev.type === 'end_week') {
+                        const w = state.weeks[ev.weekIndex];
+                        if (w && !w.completed) {
+                            const leftover = w.allocated - w.spent;
+                            state.savings += leftover;
+                            w.completed = true;
+                            recalc(state);
+                        }
+                    } else if (ev.type === 'savings_withdraw') {
+                        state.totalSavingsReapplied += ev.amount;
+                        state.savings -= ev.amount;
+                        // ensure allocations are updated after savings moves
+                        recalc(state);
+                    }
+                });
+
+                // finished processing events
+
+                return state;
+            }
+
+            // ---------- DOM refs ----------
+            const monthSelect = document.getElementById('monthSelect');
+            const incomeInput = document.getElementById('incomeInput');
+            const billInput = document.getElementById('billInput');
+            const addBillBtn = document.getElementById('addBillBtn');
+            const preBillsList = document.getElementById('preBillsList');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const setupHint = document.getElementById('setupHint');
+            const mainContent = document.getElementById('mainContent');
+            const statsRow = document.getElementById('statsRow');
+            const groceryTotalValue = document.getElementById('groceryTotalValue');
+            const savingsValue = document.getElementById('savingsValue');
+            const weeksGrid = document.getElementById('weeksGrid');
+            const historyList = document.getElementById('historyList');
+            const groceryAmountInput = document.getElementById('groceryAmount');
+            const addGroceryBtn = document.getElementById('addGroceryBtn');
+            const openSavingsDialogBtn = document.getElementById('openSavingsDialogBtn');
+            const savingsOverlay = document.getElementById('savingsOverlay');
+            const savingsWithdrawAmount = document.getElementById('savingsWithdrawAmount');
+            const cancelSavingsBtn = document.getElementById('cancelSavingsBtn');
+            const applySavingsBtn = document.getElementById('applySavingsBtn');
+            const resetOverlay = document.getElementById('resetOverlay');
+            const cancelResetBtn = document.getElementById('cancelResetBtn');
+            const confirmResetBtn = document.getElementById('confirmResetBtn');
+            let pendingAction = null;
+            const nextMonthBtn = document.getElementById('nextMonthBtn');
+
+            // populate month select
+            getMonthOptions().forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.value; opt.textContent = o.label;
+                monthSelect.appendChild(opt);
+            });
+
+            // render bills list (persistent bills + pre-start pending bills)
+            function renderBillsList() {
+                // persistent bills from events
+                const persisted = events.filter(e => e.type === 'bill');
+                // pending pre-start bills
+                const pending = preStartBills || [];
+                let out = '';
+                if (persisted.length === 0 && pending.length === 0) {
+                    out = '<div style="color:var(--muted-text);">No bills</div>';
+                } else {
+                    persisted.forEach(ev => {
+                        out += '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">' +
+                            '<span>$' + Number(ev.amount).toFixed(2) + '</span>' +
+                            '<button class="btn-ghost btn-small" data-action="undo" data-id="' + ev.id + '">Undo</button>' +
+                            '</div>';
+                    });
+                    pending.forEach(b => {
+                        out += '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">' +
+                            '<span>$' + Number(b.amount).toFixed(2) + ' (pending)</span>' +
+                            '<button class="btn-ghost btn-small" data-action="remove-pre-bill" data-id="' + b.id + '">Undo</button>' +
+                            '</div>';
+                    });
+                }
+                if (billsList) billsList.innerHTML = out;
+                if (preBillsList) preBillsList.style.display = 'none';
+            }
+
+            // remove a pre-start bill by id
+            function removePreBill(id) {
+                preStartBills = preStartBills.filter(b => b.id !== id);
+                renderBillsList();
+            }
+
+            // ---------- persist in-progress inputs across re-renders ----------
+            function captureInputs() {
+                const vals = {};
+                document.querySelectorAll('[data-persist]').forEach(el => { vals[el.dataset.persist] = el.value; });
+                return vals;
+            }
+            function restoreInputs(vals) {
+                document.querySelectorAll('[data-persist]').forEach(el => {
+                    if (vals[el.dataset.persist] !== undefined) el.value = vals[el.dataset.persist];
+                });
+            }
+
+            // ---------- localStorage persistence ----------
+            const STORAGE_KEY = 'budgettool-data-v1';
+
+            function saveState() {
+                try {
+                    const data = {
+                        events: events,
+                        idCounter: idCounter,
+                        persistedInputs: captureInputs(),
+                        monthSelectValue: monthSelect.value,
+                        incomeInputValue: incomeInput ? incomeInput.value : undefined,
+                        preStartBills: preStartBills
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                } catch (err) {
+                    // ignore storage errors
+                }
+            }
+
+            function loadState() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return;
+                    const data = JSON.parse(raw);
+                    if (Array.isArray(data.events)) events = data.events;
+                    // restore idCounter or compute from existing ids
+                    if (data.idCounter && Number.isFinite(data.idCounter)) {
+                        idCounter = data.idCounter;
+                    } else {
+                        let max = 0;
+                        events.forEach(ev => {
+                            const n = parseInt(String(ev.id || '').replace(/[^0-9]/g, ''), 10);
+                            if (!Number.isNaN(n) && n > max) max = n;
+                        });
+                        idCounter = max + 1;
+                    }
+                    // restore persisted input values
+                    const vals = data.persistedInputs || {};
+                    if (data.monthSelectValue) monthSelect.value = data.monthSelectValue;
+                    if (data.incomeInputValue && incomeInput) incomeInput.value = data.incomeInputValue;
+                    preStartBills = Array.isArray(data.preStartBills) ? data.preStartBills : [];
+                    restoreInputs(vals);
+                    renderPreBills();
+                } catch (err) {
+                    // ignore parse errors
+                }
+            }
+
+            // ---------- render ----------
+            function render() {
+                const saved = captureInputs();
+                const state = replay(events);
+
+                // update bills UI even when not started
+                renderBillsList();
+
+                if (!state.started) {
+                    mainContent.style.display = 'none';
+                    startBtn.style.display = '';
+                    nextMonthBtn.style.display = 'none';
+                    resetBtn.style.display = 'none';
+                    monthSelect.disabled = false;
+                    if (incomeInput) incomeInput.disabled = false;
+                    setupHint.textContent = 'Choose a month and a budget, then start the month. Weeks are set by how many Fridays fall in that month.';
+                    return;
+                }
+
+                mainContent.style.display = '';
+                startBtn.style.display = 'none';
+                nextMonthBtn.style.display = '';
+                resetBtn.style.display = '';
+                monthSelect.disabled = true;
+                if (incomeInput) incomeInput.disabled = true;
+                setupHint.textContent = 'Month: ' + state.monthLabel + ' — ' + state.weeks.length + ' weekly envelope' + (state.weeks.length === 1 ? '' : 's') + '. Use "Reset month" to start over.';
+
+                // stats
+                const weeksOpen = state.weeks.filter(w => !w.completed).length;
+                statsRow.innerHTML =
+                    statTile('Monthly budget', fmt(state.monthlyBudget), '') +
+                    statTile('Groceries spent', fmt(state.groceryTotal), '') +
+                    statTile('Savings balance', fmt(state.savings), state.savings < 0 ? 'neg' : (state.savings > 0 ? 'pos' : '')) +
+                    statTile('Weeks open', weeksOpen + ' / ' + state.weeks.length, '');
+
+                groceryTotalValue.textContent = fmt(state.groceryTotal);
+                savingsValue.textContent = fmt(state.savings);
+                savingsValue.className = 'value' + (state.savings < 0 ? ' neg' : (state.savings > 0 ? ' pos' : ''));
+
+                // weeks
+                weeksGrid.innerHTML = state.weeks.map(w => renderWeek(w)).join('');
+                // history (skip start_month and bill events, newest first)
+                const rows = events.filter(e => e.type !== 'start_month' && e.type !== 'bill').slice().reverse();
+                if (rows.length === 0) {
+                    historyList.innerHTML = '<div class="history-empty">No entries yet. Spending, groceries, week closes and savings moves will show up here.</div>';
+                } else {
+                    historyList.innerHTML = rows.map(ev => renderHistoryRow(ev, state)).join('');
+                }
+
+                restoreInputs(saved);
+                // persist full state to localStorage
+                saveState();
+                // update pre-start bills UI
+                renderPreBills();
+            }
+
+            function statTile(label, value, cls) {
+                return '<div class="stat"><div class="label">' + label + '</div><div class="value ' + cls + '">' + value + '</div></div>';
+            }
+
+            function renderWeek(w) {
+                const remaining = w.allocated - w.spent;
+                const pct = w.allocated > 0 ? Math.min(100, Math.max(0, (w.spent / w.allocated) * 100)) : (w.spent > 0 ? 100 : 0);
+                const over = remaining < -0.004;
+                const label = 'Week ' + (w.index + 1);
+                const dt = dateLabel(w.date);
+
+                let bottom;
+                if (w.completed) {
+                    bottom = '<div class="closed-badge">✓ Closed — leftover moved to savings</div>';
+                } else {
+                    bottom =
+                        '<div class="add-row">' +
+                        '<div class="amount-field"><input type="number" min="0" step="0.01" placeholder="0.00" data-persist="week-' + w.index + '-amount" id="weekAmount-' + w.index + '" /></div>' +
+                        '<button class="btn-ghost btn-small" data-action="add-spending" data-week="' + w.index + '">Add Amount</button>' +
+                        '</div>' +
+                        '<button class="btn-ghost btn-small" style="margin-top:50px;width:100%;" data-action="end-week" data-week="' + w.index + '">End week → savings</button>';
+                }
+
+                return (
+                    '<div class="week-card' + (w.completed ? ' completed' : '') + '">' +
+                    '<div class="postmark"><div class="wk">' + label.toUpperCase() + '</div><div class="dt">' + dt + '</div></div>' +
+                    '<h3>' + label + '</h3>' +
+                    '<div class="week-line"><span>Allocated</span><span class="v">' + fmt(w.allocated) + '</span></div>' +
+                    '<div class="week-line"><span>Spent</span><span class="v">' + fmt(w.spent) + '</span></div>' +
+                    '<div class="gauge"><div class="gauge-fill' + (over ? ' over' : '') + '" style="width:' + pct + '%"></div></div>' +
+                    '<div class="remaining-big' + (over ? ' neg' : '') + '">' + fmt(remaining) + ' left</div>' +
+                    bottom +
+                    '</div>'
+                );
+            }
+
+            function renderHistoryRow(ev, state) {
+                let tag = '', desc = '', amt = 0, amtClass = '';
+                if (ev.type === 'spending') {
+                    tag = 'Spending';
+                    desc = 'Week ' + (ev.weekIndex + 1) + ' spending';
+                    amt = -ev.amount; amtClass = 'neg';
+                } else if (ev.type === 'bill') {
+                    tag = 'Bill';
+                    desc = 'Bill';
+                    amt = -ev.amount; amtClass = 'neg';
+                } else if (ev.type === 'grocery') {
+                    tag = 'Groceries';
+                    desc = 'Grocery spending';
+                    amt = -ev.amount; amtClass = 'neg';
+                } else if (ev.type === 'end_week') {
+                    tag = 'Week closed';
+                    desc = 'Week ' + (ev.weekIndex + 1) + ' closed — leftover to savings';
+                    amt = ev.leftover;
+                    amtClass = ev.leftover < 0 ? 'neg' : 'pos';
+                } else if (ev.type === 'savings_withdraw') {
+                    tag = 'Savings used';
+                    desc = 'Savings applied to remaining weeks';
+                    amt = -ev.amount; amtClass = 'neg';
+                }
+                return (
+                    '<div class="history-row">' +
+                    '<span class="tag">' + tag + '</span>' +
+                    '<span class="desc">' + desc + '</span>' +
+                    '<span class="amt ' + amtClass + '">' + fmt(amt) + '</span>' +
+                    '<button class="undo" title="Undo this entry" data-action="undo" data-id="' + ev.id + '">✕</button>' +
+                    '</div>'
+                );
+            }
+
+            // ---------- actions ----------
+            startBtn.addEventListener('click', () => {
+                const monthVal = monthSelect.value;
+                const income = parseFloat(incomeInput && incomeInput.value) || 0;
+                if (!monthVal) {
+                    setupHint.textContent = 'Pick a month before starting.';
+                    setupHint.style.color = 'var(--stamp-red)';
+                    return;
+                }
+                // compute monthly budget = income (pre-start bills will be added as bill events which subtract)
+                const monthly = income;
+                if (isNaN(monthly) || monthly <= 0) {
+                    setupHint.textContent = 'Enter a positive income before starting.';
+                    setupHint.style.color = 'var(--stamp-red)';
+                    return;
+                }
+                setupHint.style.color = '';
+                // push start_month event
+                events.push({ id: uid(), type: 'start_month', month: monthVal, monthLabel: monthSelect.options[monthSelect.selectedIndex].textContent, amount: monthly });
+                // push any pre-start bills as events after starting so they subtract from the budget
+                const monthNorm = normalizeMonth(monthVal);
+                preStartBills.forEach(b => events.push({ id: b.id, type: 'bill', amount: b.amount, month: monthNorm }));
+                // clear the preStartBills list
+                preStartBills = [];
+                render();
+            });
+
+            // Next month opens the same confirmation as Reset but advances the month when confirmed
+            nextMonthBtn.addEventListener('click', () => {
+                const state = replay(events);
+                if (!state.started) return;
+                pendingAction = 'nextMonth';
+                try {
+                    resetOverlay.querySelector('h3').textContent = 'Start next month?';
+                    resetOverlay.querySelector('p').textContent = 'This clears every entry — spending, groceries, savings moves, all of it — and starts the next month with the same budget.';
+                } catch (e) {}
+                resetOverlay.classList.remove('hidden');
+            });
+
+            // Reset button opens confirmation overlay
+            resetBtn.addEventListener('click', () => {
+                pendingAction = 'reset';
+                try {
+                    resetOverlay.querySelector('h3').textContent = 'Reset this month?';
+                    resetOverlay.querySelector('p').textContent = 'This clears every entry — spending, groceries, savings moves, all of it — so you can start the month over. Your month and budget stay filled in.';
+                } catch (e) {}
+                resetOverlay.classList.remove('hidden');
+            });
+
+            cancelResetBtn.addEventListener('click', () => { pendingAction = null; resetOverlay.classList.add('hidden'); });
+
+            // shared reset action used by both Reset and Next Month
+            function performReset() {
+                // preserve bill events across resets
+                events = events.filter(ev => ev.type === 'bill');
+                // close overlays
+                try { resetOverlay.classList.add('hidden'); } catch (e) {}
+                try { savingsOverlay.classList.add('hidden'); } catch (e) {}
+                render();
+            }
+
+            confirmResetBtn.addEventListener('click', () => {
+                if (pendingAction === 'nextMonth') {
+                    const state = replay(events);
+                    if (!state.started) { pendingAction = null; performReset(); return; }
+                    const [y, m] = state.month.split('-').map(Number);
+                    const d = new Date(y, m - 1, 1);
+                    d.setMonth(d.getMonth() + 1);
+                    const nextVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                    const nextLabel = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    // perform reset then move UI to the next month but leave it in the not-started state
+                    performReset();
+                    // do NOT push a start_month event — keep state as not started so user must set budget and start
+                    try { monthSelect.value = nextVal; } catch (e) {}
+                    try { if (incomeInput) incomeInput.value = ''; } catch (e) {}
+                    pendingAction = null;
+                    render();
+                } else {
+                    performReset();
+                    pendingAction = null;
+                }
+            });
+
+            addGroceryBtn.addEventListener('click', () => {
+                const amount = parseFloat(groceryAmountInput.value);
+                if (isNaN(amount) || amount <= 0) return;
+                events.push({ id: uid(), type: 'grocery', amount });
+                groceryAmountInput.value = '';
+                render();
+            });
+
+            // add a bill before starting the month
+            if (addBillBtn) {
+                addBillBtn.addEventListener('click', () => {
+                    const amount = parseFloat(billInput.value);
+                    if (isNaN(amount) || amount <= 0) return;
+                    const id = uid();
+                    // if month is started, create a bill event immediately (persistent)
+                    const stateNow = replay(events);
+                    if (stateNow.started) {
+                        events.push({ id: id, type: 'bill', amount: amount, month: stateNow.month });
+                    } else {
+                        // pending pre-start bill
+                        const b = { id: id, amount: amount };
+                        preStartBills.push(b);
+                    }
+                    billInput.value = '';
+                    renderBillsList();
+                    render();
+                });
+            }
+
+            // delegated clicks for remove pre-start bill buttons and other dynamic buttons
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                if (action === 'remove-pre-bill') {
+                    const id = btn.dataset.id;
+                    removePreBill(id);
+                    return;
+                }
+            });
+
+            // (undo is handled in the main delegated handler; bills list will be refreshed there)
+
+            openSavingsDialogBtn.addEventListener('click', () => {
+                savingsWithdrawAmount.value = '';
+                savingsOverlay.classList.remove('hidden');
+            });
+            cancelSavingsBtn.addEventListener('click', () => { savingsOverlay.classList.add('hidden'); });
+            applySavingsBtn.addEventListener('click', () => {
+                const amount = parseFloat(savingsWithdrawAmount.value);
+                if (isNaN(amount) || amount <= 0) return;
+                events.push({ id: uid(), type: 'savings_withdraw', amount });
+                savingsOverlay.classList.add('hidden');
+                render();
+            });
+
+            // delegated clicks for dynamically generated buttons (weeks grid + history)
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+
+                if (action === 'add-spending') {
+                    const wi = parseInt(btn.dataset.week, 10);
+                    const input = document.getElementById('weekAmount-' + wi);
+                    const amount = parseFloat(input.value);
+                    if (isNaN(amount) || amount <= 0) return;
+                    events.push({ id: uid(), type: 'spending', weekIndex: wi, amount });
+                    render();
+                } else if (action === 'end-week') {
+                    const wi = parseInt(btn.dataset.week, 10);
+                    const state = replay(events);
+                    const w = state.weeks[wi];
+                    if (!w || w.completed) return;
+                    events.push({ id: uid(), type: 'end_week', weekIndex: wi, leftover: w.allocated - w.spent });
+                    render();
+                } else if (action === 'undo') {
+                    const id = btn.dataset.id;
+                    events = events.filter(ev => ev.id !== id);
+                    renderBillsList();
+                    render();
+                }
+            });
+
+            // load persisted state (if any) and render
+            loadState();
+            render();
+        })();
+    </script>
+</body>
+</html>
